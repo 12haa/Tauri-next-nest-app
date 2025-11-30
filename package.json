@@ -1,0 +1,17 @@
+{
+  "name": "monorepo-app",
+  "private": true,
+  "scripts": {
+    "dev:api": "cd api && npm run start:dev",
+    "dev:web": "cd web && npm run dev", 
+    "dev:tauri": "cd tauri-app && npm run tauri dev",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "build:api": "cd api && npm run build",
+    "build:web": "cd web && npm run build",
+    "build:tauri": "cd tauri-app && npm run tauri build",
+    "build": "npm run build:api && npm run build:web && npm run build:tauri"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
