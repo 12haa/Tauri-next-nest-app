@@ -1,6 +1,5 @@
 name: 'Build and Release Tauri App'
 
-# Trigger conditions
 on:
   push:
     branches:
@@ -22,19 +21,8 @@ env:
   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
 jobs:
-  # First, let's make sure it triggers
-  debug:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Debug Info
-        run: |
-          echo "�� Workflow triggered!"
-          echo "Event: ${{ github.event_name }}"
-          echo "Branch: ${{ github.ref }}"
-          echo "Repository: ${{ github.repository }}"
-
+  # Job 1: Merge dev to main and bump version
   prepare-release:
-    needs: debug
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.bump_version.outputs.new_version }}
@@ -62,13 +50,7 @@ jobs:
         run: |
           cd tauri-app
           
-          # Check if tauri.conf.json exists
-          if [ ! -f "src-tauri/tauri.conf.json" ]; then
-            echo "❌ tauri.conf.json not found!"
-            exit 1
-          fi
-          
-          # Get current version
+          # Get current version from tauri.conf.json
           CURRENT_VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
           echo "Current version: $CURRENT_VERSION"
           
@@ -78,7 +60,7 @@ jobs:
           MINOR=${VERSION_PARTS[1]}
           PATCH=${VERSION_PARTS[2]}
           
-          # Bump type
+          # Determine bump type
           BUMP_TYPE="${{ github.event.inputs.version_bump || 'patch' }}"
           
           case $BUMP_TYPE in
@@ -108,21 +90,33 @@ jobs:
             fs.writeFileSync('./src-tauri/tauri.conf.json', JSON.stringify(config, null, 2) + '\n');
           "
           
-          # Update Cargo.toml
+          # Update Cargo.toml version
           sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" src-tauri/Cargo.toml
+          
+          # Update package.json if exists
+          if [ -f "package.json" ]; then
+            node -e "
+              const fs = require('fs');
+              const pkg = require('./package.json');
+              pkg.version = '$NEW_VERSION';
+              fs.writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\n');
+            "
+          fi
 
-      - name: Commit and Push
+      - name: Commit Version Bump to Dev
         run: |
           git add -A
           git diff --staged --quiet || git commit -m "chore: bump version to v${{ steps.bump_version.outputs.new_version }}"
           git push origin dev
 
-      - name: Merge to Main
+      - name: Merge Dev to Main
         run: |
-          git checkout main || git checkout -b main
-          git merge dev --no-ff -m "chore: merge dev into main for v${{ steps.bump_version.outputs.new_version }}" || true
+          git fetch origin main:main || git checkout -b main
+          git checkout main
+          git merge dev --no-ff -m "chore: merge dev into main for v${{ steps.bump_version.outputs.new_version }}"
           git push origin main
 
+  # Job 2: Build for all platforms
   build:
     needs: prepare-release
     strategy:
@@ -131,16 +125,16 @@ jobs:
         include:
           - platform: 'macos-latest'
             args: '--target aarch64-apple-darwin'
-            target: 'aarch64-apple-darwin'
+            rust_target: 'aarch64-apple-darwin'
           - platform: 'macos-latest'
             args: '--target x86_64-apple-darwin'
-            target: 'x86_64-apple-darwin'
+            rust_target: 'x86_64-apple-darwin'
           - platform: 'ubuntu-22.04'
             args: ''
-            target: ''
+            rust_target: ''
           - platform: 'windows-latest'
             args: ''
-            target: ''
+            rust_target: ''
 
     runs-on: ${{ matrix.platform }}
     
@@ -155,12 +149,18 @@ jobs:
         with:
           node-version: '20'
 
+      # FIXED: Correct Rust toolchain action
       - name: Install Rust stable
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          targets: ${{ matrix.rust_target }}
 
-      - name: Install dependencies (Ubuntu)
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './tauri-app/src-tauri -> target'
+
+      - name: Install dependencies (Ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
@@ -179,8 +179,17 @@ jobs:
         with:
           projectPath: tauri-app
           tagName: v${{ needs.prepare-release.outputs.new_version }}
-          releaseName: 'v${{ needs.prepare-release.outputs.new_version }}'
-          releaseBody: 'Auto-released from dev branch'
+          releaseName: 'Release v${{ needs.prepare-release.outputs.new_version }}'
+          releaseBody: |
+            ## Changes
+            
+            Auto-released from dev branch.
+            
+            ### Downloads
+            - **Windows**: Download the `.msi` or `.exe` file
+            - **macOS (Apple Silicon)**: Download the `aarch64.dmg` file  
+            - **macOS (Intel)**: Download the `x64.dmg` file
+            - **Linux**: Download the `.AppImage` or `.deb` file
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
