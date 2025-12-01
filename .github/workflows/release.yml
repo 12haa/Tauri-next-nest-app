@@ -21,7 +21,6 @@ env:
   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
 jobs:
-  # Job 1: Merge dev to main and bump version
   prepare-release:
     runs-on: ubuntu-latest
     outputs:
@@ -40,6 +39,11 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
@@ -50,17 +54,14 @@ jobs:
         run: |
           cd tauri-app
           
-          # Get current version from tauri.conf.json
           CURRENT_VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
           echo "Current version: $CURRENT_VERSION"
           
-          # Parse version
           IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
           MAJOR=${VERSION_PARTS[0]}
           MINOR=${VERSION_PARTS[1]}
           PATCH=${VERSION_PARTS[2]}
           
-          # Determine bump type
           BUMP_TYPE="${{ github.event.inputs.version_bump || 'patch' }}"
           
           case $BUMP_TYPE in
@@ -82,7 +83,6 @@ jobs:
           echo "New version: $NEW_VERSION"
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           
-          # Update tauri.conf.json
           node -e "
             const fs = require('fs');
             const config = require('./src-tauri/tauri.conf.json');
@@ -90,10 +90,8 @@ jobs:
             fs.writeFileSync('./src-tauri/tauri.conf.json', JSON.stringify(config, null, 2) + '\n');
           "
           
-          # Update Cargo.toml version
           sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" src-tauri/Cargo.toml
           
-          # Update package.json if exists
           if [ -f "package.json" ]; then
             node -e "
               const fs = require('fs');
@@ -116,7 +114,6 @@ jobs:
           git merge dev --no-ff -m "chore: merge dev into main for v${{ steps.bump_version.outputs.new_version }}"
           git push origin main
 
-  # Job 2: Build for all platforms
   build:
     needs: prepare-release
     strategy:
@@ -149,7 +146,12 @@ jobs:
         with:
           node-version: '20'
 
-      # FIXED: Correct Rust toolchain action
+      # THIS IS THE FIX - Install pnpm on all platforms
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -166,9 +168,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
+      # Use pnpm to install dependencies
       - name: Install frontend dependencies
         working-directory: tauri-app
-        run: npm install
+        run: pnpm install
 
       - name: Build Tauri App
         uses: tauri-apps/tauri-action@v0
