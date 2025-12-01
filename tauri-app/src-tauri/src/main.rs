@@ -21,16 +21,26 @@ fn get_system_info() -> String {
 
 fn main() {
     tauri::Builder::default()
+        // add the updater plugin
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_opener::init())
+
+        // keep your setup logic
         .setup(|app| {
             #[cfg(debug_assertions)]
             {
-                let window = app.get_webview_window("main")
+                let window = app
+                    .get_webview_window("main")
                     .expect("پنجره main پیدا نشد");
                 window.open_devtools();
             }
             Ok(())
         })
+
+        // keep your invoke handler
         .invoke_handler(tauri::generate_handler![greet, get_system_info])
+
+        // run app
         .run(tauri::generate_context!())
         .expect("خطا هنگام اجرای برنامه Tauri");
 }

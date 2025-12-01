@@ -31,5 +31,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/12haa/Tauri-next-nest-app/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDcwQkY0MzNEQTE3REQ5M0IKUldRNzJYMmhQVU8vY045LzIwZnNvakxhTklDSHMrdnBla3FDK2t1RkNVWVptM2QxSmNQRmN4VEoK"
+    }
   }
 }
