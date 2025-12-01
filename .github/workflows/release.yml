@@ -146,7 +146,6 @@ jobs:
         with:
           node-version: '20'
 
-      # THIS IS THE FIX - Install pnpm on all platforms
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -168,8 +167,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
-      # Use pnpm to install dependencies
-      - name: Install frontend dependencies
+      # --- NEW STEPS START: Build Web App First ---
+      - name: Install Web Dependencies
+        working-directory: web
+        run: pnpm install
+
+      - name: Build Web App
+        working-directory: web
+        run: pnpm build
+      # --- NEW STEPS END ---
+
+      - name: Install Tauri Dependencies
         working-directory: tauri-app
         run: pnpm install
 
