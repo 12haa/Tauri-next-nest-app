@@ -4,9 +4,7 @@ on:
   push:
     branches:
       - dev
-    paths:
-      - 'tauri-app/**'
-      - '.github/workflows/release.yml'
+  
 
   workflow_dispatch:
     inputs:
