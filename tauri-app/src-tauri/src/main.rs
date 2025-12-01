@@ -1,46 +1,32 @@
-#![cfg_attr(
-    all(not(debug_assertions), target_os = "windows"),
-    windows_subsystem = "windows"
-)]
-
 use tauri::Manager;
 
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("سلام {}! از Tauri", name)
-}
-
-#[tauri::command]
-fn get_system_info() -> String {
-    format!(
-        "OS: {} | Arch: {}",
-        std::env::consts::OS,
-        std::env::consts::ARCH
-    )
-}
-
-fn main() {
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
     tauri::Builder::default()
-        // add the updater plugin
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
-
-        // keep your setup logic
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
-            #[cfg(debug_assertions)]
-            {
-                let window = app
-                    .get_webview_window("main")
-                    .expect("پنجره main پیدا نشد");
-                window.open_devtools();
-            }
+            // You can trigger update check on startup here if needed
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                if let Err(e) = update_check(handle).await {
+                    eprintln!("Failed to check for updates: {}", e);
+                }
+            });
             Ok(())
         })
-
-        // keep your invoke handler
-        .invoke_handler(tauri::generate_handler![greet, get_system_info])
-
-        // run app
         .run(tauri::generate_context!())
-        .expect("خطا هنگام اجرای برنامه Tauri");
+        .expect("error while running tauri application");
+}
+
+async fn update_check(app: tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    use tauri_plugin_updater::UpdaterExt;
+
+    if let Some(update) = app.updater()?.check().await? {
+        println!("Update available: {}", update.version);
+        // Auto-download and install (optional - you can handle this in frontend)
+        // update.download_and_install(|_, _| {}, || {}).await?;
+    }
+
+    Ok(())
 }
