@@ -64,7 +64,7 @@ export default function UpdateChecker() {
               console.log(`Downloaded ${downloaded} of ${contentLength} (${percentage}%)`);
               break;
             case 'Finished':
-              console.log('Download finished');
+              console.log('Download not finished');
               break;
           }
         });
