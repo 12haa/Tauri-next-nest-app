@@ -16,7 +16,7 @@ pub fn run() {
             Ok(())
         })
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .expect("Error when running the app");
 }
 
 async fn update_check(app: tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
