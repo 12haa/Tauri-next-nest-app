@@ -1,4 +1,4 @@
-name: Build and Release Tauri App
+name: 'Build and Release Tauri App'
 
 on:
   push:
@@ -27,11 +27,12 @@ jobs:
       new_version: ${{ steps.bump_version.outputs.new_version }}
 
     steps:
-      - name: Checkout dev
+      - name: Checkout dev branch
         uses: actions/checkout@v4
         with:
           ref: dev
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -52,26 +53,39 @@ jobs:
         id: bump_version
         run: |
           cd tauri-app
+
           CURRENT_VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          echo "Current version: $CURRENT_VERSION"
+
           IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
           MAJOR=${VERSION_PARTS[0]}
           MINOR=${VERSION_PARTS[1]}
           PATCH=${VERSION_PARTS[2]}
+
           BUMP_TYPE="${{ github.event.inputs.version_bump || 'patch' }}"
+
           case $BUMP_TYPE in
             major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
             minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
             patch) PATCH=$((PATCH + 1)) ;;
           esac
+
           NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "New version: $NEW_VERSION"
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+          # Update tauri.conf.json
           node -e "
-            const fs=require('fs');
-            const c=require('./src-tauri/tauri.conf.json');
-            c.version='$NEW_VERSION';
-            fs.writeFileSync('./src-tauri/tauri.conf.json',JSON.stringify(c,null,2));
+            const fs = require('fs');
+            const config = require('./src-tauri/tauri.conf.json');
+            config.version = '$NEW_VERSION';
+            fs.writeFileSync('./src-tauri/tauri.conf.json', JSON.stringify(config, null, 2) + '\n');
           "
+
+          # Update Cargo.toml
           sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" src-tauri/Cargo.toml
+
+          # Update package.json if it exists
           if [ -f "package.json" ]; then
             node -e "
               const fs = require('fs');
@@ -84,5 +98,176 @@ jobs:
       - name: Commit Version Bump to Dev
         run: |
           git add -A
-          git commit -m "chore: bump version" || true
+          git diff --staged --quiet || git commit -m "chore: bump version to v${{ steps.bump_version.outputs.new_version }}"
           git push origin dev
+
+      - name: Merge Dev to Main
+        run: |
+          git fetch origin main:main || git checkout -b main
+          git checkout main
+          git merge dev --no-ff -m "chore: merge dev into main for v${{ steps.bump_version.outputs.new_version }}"
+          git push origin main
+
+  build:
+    needs: prepare-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin'
+            rust_target: 'aarch64-apple-darwin'
+            name: 'macos-arm'
+          - platform: 'macos-latest'
+            args: '--target x86_64-apple-darwin'
+            rust_target: 'x86_64-apple-darwin'
+            name: 'macos-intel'
+          - platform: 'ubuntu-22.04'
+            args: ''
+            rust_target: ''
+            name: 'linux'
+          - platform: 'windows-latest'
+            args: ''
+            rust_target: ''
+            name: 'windows'
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './tauri-app/src-tauri -> target'
+
+      - name: Install dependencies (Ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      # Build Web App (Next.js)
+      - name: Install Web Dependencies
+        working-directory: web
+        run: pnpm install
+
+      - name: Build Web App
+        working-directory: web
+        run: pnpm build
+
+      # Install Tauri Dependencies
+      - name: Install Tauri Dependencies
+        working-directory: tauri-app
+        run: pnpm install
+
+      # Build Tauri App - FIXED SYNTAX
+      - name: Build Tauri App
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: tauri-app
+          tagName: v${{ needs.prepare-release.outputs.new_version }}
+          releaseName: 'Release v${{ needs.prepare-release.outputs.new_version }}'
+          releaseBody: 'Auto-released from dev branch.'
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}
+          includeUpdaterJson: true
+
+      # Rename the JSON so they don't overwrite each other
+      - name: Rename JSON for upload
+        run: |
+          if [ -f "latest.json" ]; then
+            mv latest.json latest-${{ matrix.name }}.json
+          else
+            echo "No latest.json found"
+          fi
+        shell: bash
+
+      # Upload the chunk as an artifact
+      - name: Upload JSON Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-${{ matrix.name }}
+          path: latest-${{ matrix.name }}.json
+
+  # FINAL JOB: MERGE JSONS
+  publish-updater:
+    needs: [prepare-release, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download All JSON Chunks
+        uses: actions/download-artifact@v4
+        with:
+          pattern: latest-*
+          merge-multiple: true
+
+      - name: Merge JSON Files
+        run: |
+          echo "Merging JSON files..."
+          node -e "
+            const fs = require('fs');
+            const files = fs.readdirSync('.').filter(f => f.startsWith('latest-') && f.endsWith('.json'));
+
+            if (files.length === 0) {
+              console.error('No JSON files found to merge');
+              process.exit(1);
+            }
+
+            let finalJson = {
+              version: '',
+              notes: '',
+              pub_date: '',
+              platforms: {}
+            };
+
+            files.forEach(file => {
+              console.log('Processing ' + file);
+              try {
+                const content = JSON.parse(fs.readFileSync(file, 'utf8'));
+                // Use info from the first valid file found
+                if (!finalJson.version) {
+                  finalJson.version = content.version;
+                  finalJson.notes = content.notes;
+                  finalJson.pub_date = content.pub_date;
+                }
+                // Merge the platforms object
+                Object.assign(finalJson.platforms, content.platforms);
+              } catch (e) {
+                console.error('Error parsing ' + file, e);
+              }
+            });
+
+            console.log('Merged content:', JSON.stringify(finalJson, null, 2));
+            fs.writeFileSync('latest.json', JSON.stringify(finalJson, null, 2));
+          "
+
+      - name: Upload Final latest.json to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.prepare-release.outputs.new_version }}
+          files: latest.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
