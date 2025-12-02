@@ -163,7 +163,7 @@ jobs:
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
-          includeUpdaterJson: true   # <-- important
+          includeUpdaterJson: true # <-- important
 
   generate-updater-json:
     needs: build
@@ -220,4 +220,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload $VERSION latest.json --clobber
+          VERSION="v${{ needs.prepare-release.outputs.new_version }}"
+          gh release upload $VERSION latest.json --clobber --repo $GITHUB_REPOSITORY
