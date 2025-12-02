@@ -1,12 +1,11 @@
 [package]
 name = "tauri-app"
-version = "0.1.19"
+version = "0.1.20"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
 
 [lib]
-# The `_lib` suffix makes the lib name unique to avoid conflicts with the bin name.
 name = "tauri_app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
