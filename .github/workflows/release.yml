@@ -119,19 +119,23 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout main
+        uses: actions/checkout@v4
         with:
           ref: main
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - uses: pnpm/action-setup@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
           version: 9
 
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Install dependencies (Ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'
@@ -159,7 +163,7 @@ jobs:
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
-          includeUpdaterJson: true # <-- important
+          includeUpdaterJson: true
 
   generate-updater-json:
     needs: build
@@ -173,7 +177,8 @@ jobs:
         with:
           ref: main
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
 
@@ -184,17 +189,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir sigs
+          mkdir -p sigs
           VERSION="v${{ needs.prepare-release.outputs.new_version }}"
           VERSION_NUM="${{ needs.prepare-release.outputs.new_version }}"
           REPO="${{ github.repository }}"
           BASE_URL="https://github.com/${REPO}/releases/download/${VERSION}"
 
-          # Pick Windows MSI first
           WIN_FILE="tauri-app_${VERSION_NUM}_x64_en-US.msi"
           WIN_SIG="tauri-app_${VERSION_NUM}_x64_en-US.msi.sig"
 
-          # Generate JSON
           node << EOF
           const fs = require('fs');
           const latest = {
