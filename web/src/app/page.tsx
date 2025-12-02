@@ -5,7 +5,7 @@ export default function Home() {
     <main className="container mx-auto px-4 py-8">
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800">🚀 oashjdoiashdoiasjd کاربران</h1>
-        <p className="text-gray-600 mt-2">اپلیکیشن asodkaposkd شده با Tauri، Next.js و NestJS</p>
+        <p className="text-gray-600 mt-2">اپلیکیشن ؛خ؛خ؛خ شده با Tauri، Next.js و NestJS</p>
       </header>
 
       <UserList />
