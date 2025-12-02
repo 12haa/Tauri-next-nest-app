@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.bump_version.outputs.new_version }}
-    
+
     steps:
       - name: Checkout dev branch
         uses: actions/checkout@v4
@@ -53,45 +53,29 @@ jobs:
         id: bump_version
         run: |
           cd tauri-app
-          
           CURRENT_VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
-          echo "Current version: $CURRENT_VERSION"
-          
           IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
           MAJOR=${VERSION_PARTS[0]}
           MINOR=${VERSION_PARTS[1]}
           PATCH=${VERSION_PARTS[2]}
-          
           BUMP_TYPE="${{ github.event.inputs.version_bump || 'patch' }}"
-          
           case $BUMP_TYPE in
-            major)
-              MAJOR=$((MAJOR + 1))
-              MINOR=0
-              PATCH=0
-              ;;
-            minor)
-              MINOR=$((MINOR + 1))
-              PATCH=0
-              ;;
-            patch)
-              PATCH=$((PATCH + 1))
-              ;;
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH + 1)) ;;
           esac
-          
           NEW_VERSION="$MAJOR.$MINOR.$PATCH"
-          echo "New version: $NEW_VERSION"
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          
+
+          # Update tauri.conf.json
           node -e "
             const fs = require('fs');
             const config = require('./src-tauri/tauri.conf.json');
             config.version = '$NEW_VERSION';
             fs.writeFileSync('./src-tauri/tauri.conf.json', JSON.stringify(config, null, 2) + '\n');
           "
-          
+
           sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" src-tauri/Cargo.toml
-          
           if [ -f "package.json" ]; then
             node -e "
               const fs = require('fs');
@@ -120,21 +104,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - platform: 'windows-latest'
+            args: ''
+            rust_target: ''
+          - platform: 'ubuntu-22.04'
+            args: ''
+            rust_target: ''
           - platform: 'macos-latest'
             args: '--target aarch64-apple-darwin'
             rust_target: 'aarch64-apple-darwin'
           - platform: 'macos-latest'
             args: '--target x86_64-apple-darwin'
             rust_target: 'x86_64-apple-darwin'
-          - platform: 'ubuntu-22.04'
-            args: ''
-            rust_target: ''
-          - platform: 'windows-latest'
-            args: ''
-            rust_target: ''
 
     runs-on: ${{ matrix.platform }}
-    
+
     steps:
       - name: Checkout main branch
         uses: actions/checkout@v4
@@ -155,11 +139,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.rust_target }}
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: './tauri-app/src-tauri -> target'
 
       - name: Install dependencies (Ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'
@@ -190,27 +169,17 @@ jobs:
           tagName: v${{ needs.prepare-release.outputs.new_version }}
           releaseName: 'Release v${{ needs.prepare-release.outputs.new_version }}'
           releaseBody: |
-            ## Changes
-            
-            Auto-released from dev branch.
-            
-            ### Downloads
-            - **Windows**: Download the `.msi` or `.exe` file
-            - **macOS (Apple Silicon)**: Download the `aarch64.dmg` file  
-            - **macOS (Intel)**: Download the `x64.dmg` file
-            - **Linux**: Download the `.AppImage` or `.deb` file
+            Auto-released from dev branch
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
+          includeUpdaterJson: true   # <-- important
 
   generate-updater-json:
-    needs: [prepare-release, build]
+    needs: build
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    
     steps:
-      - name: Checkout
+      - name: Checkout main branch
         uses: actions/checkout@v4
         with:
           ref: main
@@ -220,10 +189,10 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Wait for release assets to be available
+      - name: Wait for release assets
         run: sleep 30
 
-      - name: Get Release Info and Generate latest.json
+      - name: Generate latest.json for Windows
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -231,156 +200,31 @@ jobs:
           VERSION_NUM="${{ needs.prepare-release.outputs.new_version }}"
           REPO="${{ github.repository }}"
           BASE_URL="https://github.com/${REPO}/releases/download/${VERSION}"
-          
-          echo "Processing release: $VERSION"
-          echo "Base URL: $BASE_URL"
-          
-          # Get release published date
-          PUBLISHED_AT=$(gh release view $VERSION --json publishedAt -q '.publishedAt')
-          echo "Published at: $PUBLISHED_AT"
-          
-          # Create directory for signatures
-          mkdir -p sigs
-          
-          # Download all signature files
-          echo "Downloading signature files..."
-          gh release download $VERSION --pattern "*.sig" --dir ./sigs || echo "Some signatures may not exist"
-          
-          # List downloaded signatures
-          echo "Downloaded signatures:"
-          ls -la ./sigs/ || echo "No signatures found"
-          
-          # Initialize signature variables
-          WIN_NSIS_SIG=""
-          WIN_MSI_SIG=""
-          LINUX_APPIMAGE_SIG=""
-          LINUX_DEB_SIG=""
-          MACOS_AARCH64_SIG=""
-          MACOS_X64_SIG=""
-          
-          # Read Windows NSIS signature
-          if [ -f "./sigs/tauri-app_${VERSION_NUM}_x64-setup.nsis.zip.sig" ]; then
-            WIN_NSIS_SIG=$(cat "./sigs/tauri-app_${VERSION_NUM}_x64-setup.nsis.zip.sig")
-            echo "Found Windows NSIS signature"
-          fi
-          
-          # Read Windows MSI signature (fallback)
-          if [ -f "./sigs/tauri-app_${VERSION_NUM}_x64_en-US.msi.zip.sig" ]; then
-            WIN_MSI_SIG=$(cat "./sigs/tauri-app_${VERSION_NUM}_x64_en-US.msi.zip.sig")
-            echo "Found Windows MSI signature"
-          fi
-          
-          # Read Linux AppImage signature
-          if [ -f "./sigs/tauri-app_${VERSION_NUM}_amd64.AppImage.tar.gz.sig" ]; then
-            LINUX_APPIMAGE_SIG=$(cat "./sigs/tauri-app_${VERSION_NUM}_amd64.AppImage.tar.gz.sig")
-            echo "Found Linux AppImage signature"
-          fi
-          
-          # Read macOS aarch64 signature
-          if [ -f "./sigs/tauri-app_${VERSION_NUM}_aarch64.app.tar.gz.sig" ]; then
-            MACOS_AARCH64_SIG=$(cat "./sigs/tauri-app_${VERSION_NUM}_aarch64.app.tar.gz.sig")
-            echo "Found macOS aarch64 signature"
-          fi
-          
-          # Read macOS x64 signature
-          if [ -f "./sigs/tauri-app_${VERSION_NUM}_x64.app.tar.gz.sig" ]; then
-            MACOS_X64_SIG=$(cat "./sigs/tauri-app_${VERSION_NUM}_x64.app.tar.gz.sig")
-            echo "Found macOS x64 signature"
-          fi
-          
-          # Use Windows NSIS or MSI signature
-          WIN_SIG="${WIN_NSIS_SIG:-$WIN_MSI_SIG}"
-          WIN_URL="${BASE_URL}/tauri-app_${VERSION_NUM}_x64-setup.nsis.zip"
-          
-          # If NSIS sig doesn't exist but MSI does, use MSI URL
-          if [ -z "$WIN_NSIS_SIG" ] && [ -n "$WIN_MSI_SIG" ]; then
-            WIN_URL="${BASE_URL}/tauri-app_${VERSION_NUM}_x64_en-US.msi.zip"
-          fi
-          
-          # Create latest.json using Node.js for proper JSON handling
+
+          # Pick Windows MSI first
+          WIN_FILE="tauri-app_${VERSION_NUM}_x64_en-US.msi"
+          WIN_SIG="tauri-app_${VERSION_NUM}_x64_en-US.msi.sig"
+
+          # Generate JSON
           node << EOF
           const fs = require('fs');
-          
-          const latestJson = {
+          const latest = {
             version: "${VERSION}",
             notes: "Release ${VERSION}",
-            pub_date: "${PUBLISHED_AT}",
+            pub_date: new Date().toISOString(),
             platforms: {}
           };
-          
-          // Add darwin-aarch64 if signature exists
-          const macosAarch64Sig = \`${MACOS_AARCH64_SIG}\`;
-          if (macosAarch64Sig) {
-            latestJson.platforms["darwin-aarch64"] = {
-              signature: macosAarch64Sig,
-              url: "${BASE_URL}/tauri-app_${VERSION_NUM}_aarch64.app.tar.gz"
-            };
-          }
-          
-          // Add darwin-x86_64 if signature exists
-          const macosX64Sig = \`${MACOS_X64_SIG}\`;
-          if (macosX64Sig) {
-            latestJson.platforms["darwin-x86_64"] = {
-              signature: macosX64Sig,
-              url: "${BASE_URL}/tauri-app_${VERSION_NUM}_x64.app.tar.gz"
-            };
-          }
-          
-          // Add linux-x86_64 if signature exists
-          const linuxSig = \`${LINUX_APPIMAGE_SIG}\`;
-          if (linuxSig) {
-            latestJson.platforms["linux-x86_64"] = {
-              signature: linuxSig,
-              url: "${BASE_URL}/tauri-app_${VERSION_NUM}_amd64.AppImage.tar.gz"
-            };
-          }
-          
-          // Add windows-x86_64 if signature exists
-          const winSig = \`${WIN_SIG}\`;
-          if (winSig) {
-            latestJson.platforms["windows-x86_64"] = {
-              signature: winSig,
-              url: "${WIN_URL}"
-            };
-          }
-          
-          fs.writeFileSync('latest.json', JSON.stringify(latestJson, null, 2));
+          latest.platforms["windows-x86_64"] = {
+            url: "${BASE_URL}/${WIN_FILE}",
+            signature: fs.existsSync("${WIN_SIG}") ? fs.readFileSync("${WIN_SIG}", "utf8") : ""
+          };
+          fs.writeFileSync('latest.json', JSON.stringify(latest, null, 2));
           console.log('Generated latest.json:');
-          console.log(JSON.stringify(latestJson, null, 2));
+          console.log(JSON.stringify(latest, null, 2));
           EOF
 
-      - name: Validate latest.json
-        run: |
-          echo "Validating latest.json..."
-          cat latest.json
-          node -e "JSON.parse(require('fs').readFileSync('latest.json', 'utf8')); console.log('JSON is valid!');"
-
-      - name: Upload latest.json to Release
+      - name: Upload latest.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION="v${{ needs.prepare-release.outputs.new_version }}"
-          
-          # Delete existing latest.json if it exists (ignore errors)
-          gh release delete-asset $VERSION latest.json --yes 2>/dev/null || true
-          
-          # Upload new latest.json
-          echo "Uploading latest.json to release $VERSION..."
           gh release upload $VERSION latest.json --clobber
-          
-          echo "Successfully uploaded latest.json"
-          echo "URL: https://github.com/${{ github.repository }}/releases/download/${VERSION}/latest.json"
-
-      - name: Verify Upload
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          VERSION="v${{ needs.prepare-release.outputs.new_version }}"
-          
-          echo "Listing release assets..."
-          gh release view $VERSION --json assets -q '.assets[].name'
-          
-          echo ""
-          echo "Verifying latest.json is accessible..."
-          sleep 5
-          curl -sL "https://github.com/${{ github.repository }}/releases/latest/download/latest.json" | head -20
