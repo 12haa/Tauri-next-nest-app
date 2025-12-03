@@ -1,11 +1,14 @@
 import { CreateUserInput, UpdateUserInput, User } from '@/types/userTypes';
 import axios from 'axios';
 
-
 // تشخیص محیط Tauri
 const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api';
+// در محیط Tauri همیشه از localhost استفاده کن
+// در محیط وب از متغیر محیطی یا localhost استفاده کن
+const API_BASE_URL = isTauri
+  ? 'http://127.0.0.1:3001/api'
+  : process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -19,6 +22,16 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error('API Error:', error);
+    console.error('API Base URL:', API_BASE_URL);
+    console.error('Is Tauri:', isTauri);
+    if (error.response) {
+      console.error('Response data:', error.response.data);
+      console.error('Response status:', error.response.status);
+    } else if (error.request) {
+      console.error('No response received:', error.request);
+    } else {
+      console.error('Error message:', error.message);
+    }
     return Promise.reject(error);
   }
 );
