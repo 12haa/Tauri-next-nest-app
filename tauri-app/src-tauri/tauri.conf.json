@@ -18,8 +18,7 @@
       }
     ],
     "security": {
-      "csp": null,
-      "dangerousUseHttp": true
+      "csp": null
     }
   },
   "bundle": {
