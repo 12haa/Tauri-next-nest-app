@@ -5,8 +5,15 @@ export const users = sqliteTable('users', {
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
   password: text('password').notNull(),
-  createdAt: text('created_at').default(new Date().toISOString()),
-  updatedAt: text('updated_at').default(new Date().toISOString()),
+  age: integer('age'),
+  phone: text('phone'),
+  profilePicture: text('profile_picture'),
+  bio: text('bio'),
+  address: text('address'),
+  role: text('role').default('user'),
+  lastLoginAt: text('last_login_at'),
+  createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').$defaultFn(() => new Date().toISOString()),
 });
 
 // تعریف تایپ‌ها
