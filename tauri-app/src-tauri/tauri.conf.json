@@ -1,48 +1,48 @@
-  {
-    "$schema": "https://schema.tauri.app/config/2",
-    "productName": "tauri-app",
-    "version": "0.1.22",
-    "identifier": "com.haaa.tauri-app",
-    "build": {
-      "beforeDevCommand": "pnpm dev",
-      "devUrl": "http://localhost:3000",
-      "beforeBuildCommand": "pnpm build",
-      "frontendDist": "../../web/out"
-    },
-    "app": {
-      "windows": [
-        {
-          "title": "tauri-app",
-          "width": 800,
-          "height": 600
-        }
-      ],
-      "security": {
-        "csp": null,
-        "dangerousUseHttp": true
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "tauri-app",
+  "version": "0.1.23",
+  "identifier": "com.haaa.tauri-app",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "devUrl": "http://localhost:3000",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../../web/out"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "tauri-app",
+        "width": 800,
+        "height": 600
       }
+    ],
+    "security": {
+      "csp": null,
+      "dangerousUseHttp": true
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "shell": {
+      "all": true
     },
-    "bundle": {
-      "active": true,
-      "targets": "all",
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
+    "updater": {
+      "endpoints": [
+        "https://github.com/12haa/Tauri-next-nest-app/releases/latest/download/latest.json"
       ],
-      "createUpdaterArtifacts": true
-    },
-    "plugins": {
-      "shell": {
-        "all": true
-      },
-      "updater": {
-        "endpoints": [
-          "https://github.com/12haa/Tauri-next-nest-app/releases/latest/download/latest.json"
-        ],
-        "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDcwQkY0MzNEQTE3REQ5M0IKUldRNzJYMmhQVU8vY045LzIwZnNvakxhTklDSHMrdnBla3FDK2t1RkNVWVptM2QxSmNQRmN4VEoK"
-      }
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDcwQkY0MzNEQTE3REQ5M0IKUldRNzJYMmhQVU8vY045LzIwZnNvakxhTklDSHMrdnBla3FDK2t1RkNVWVptM2QxSmNQRmN4VEoK"
     }
   }
+}
