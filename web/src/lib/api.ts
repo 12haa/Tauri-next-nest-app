@@ -5,7 +5,7 @@ import axios from 'axios';
 // تشخیص محیط Tauri
 const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

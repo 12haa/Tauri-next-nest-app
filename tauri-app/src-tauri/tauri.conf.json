@@ -18,7 +18,8 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "dangerousUseHttp": true
     }
   },
   "bundle": {
@@ -34,6 +35,9 @@
     "createUpdaterArtifacts": true
   },
   "plugins": {
+    "shell": {
+      "all": true
+    },
     "updater": {
       "endpoints": [
         "https://github.com/12haa/Tauri-next-nest-app/releases/latest/download/latest.json"
