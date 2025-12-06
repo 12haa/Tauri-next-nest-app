@@ -43,6 +43,13 @@
       "when": 1765027635633,
       "tag": "0005_nosy_stark_industries",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1765029355665,
+      "tag": "0006_broad_yellow_claw",
+      "breakpoints": true
     }
   ]
 }

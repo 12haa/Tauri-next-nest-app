@@ -12,6 +12,7 @@ export const users = sqliteTable('users', {
   address: text('address'),
   role: text('role').default('user'),
   dateOfBirth: text('date_of_birth'),
+  dateOfDeath: text('date_of_death'),
   lastLoginAt: text('last_login_at'),
   createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
   updatedAt: text('updated_at').$defaultFn(() => new Date().toISOString()),
