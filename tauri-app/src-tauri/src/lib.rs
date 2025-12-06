@@ -85,7 +85,7 @@ fn get_db_url(app_handle: &tauri::AppHandle) -> Result<String, String> {
         .map_err(|e| format!("Failed to create app data directory: {}", e))?;
 
     let db_path = app_data_dir.join("app.db");
-    Ok(format!("sqlite:{}", db_path.to_string_lossy()))
+    Ok(format!("sqlite:{}?mode=rwc", db_path.to_string_lossy()))
 }
 
 /// Run the Tauri app
