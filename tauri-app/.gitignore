@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 
+tauri-app/src-tauri/binaries/
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

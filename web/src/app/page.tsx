@@ -1,5 +1,7 @@
 import { UserList } from '@/ui/components/Users/UsersList';
 
+import { DebugTables } from '@/ui/components/Debug/DebugTables';
+
 export default function Home() {
   return (
     <main className="container mx-auto px-4 py-8">
@@ -9,6 +11,8 @@ export default function Home() {
       </header>
 
       <UserList />
+
+      <DebugTables />
     </main>
   );
 }
