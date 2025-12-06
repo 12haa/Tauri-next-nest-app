@@ -22,7 +22,10 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "build:bin": "npm run build && pkg . --targets node18-win-x64 --output ../../tauri-app/src-tauri/binaries/api-x86_64-pc-windows-msvc.exe"
+    "build:bin:win": "npm run build && pkg . --targets node18-win-x64 --output ../../tauri-app/src-tauri/binaries/api-x86_64-pc-windows-msvc.exe",
+    "build:bin:macos-intel": "npm run build && pkg . --targets node18-macos-x64 --output ../../tauri-app/src-tauri/binaries/api-x86_64-apple-darwin",
+    "build:bin:macos-arm": "npm run build && pkg . --targets node18-macos-arm64 --output ../../tauri-app/src-tauri/binaries/api-aarch64-apple-darwin",
+    "build:bin:linux": "npm run build && pkg . --targets node18-linux-x64 --output ../../tauri-app/src-tauri/binaries/api-x86_64-unknown-linux-gnu"
   },
   "bin": "dist/src/main.js",
   "pkg": {
