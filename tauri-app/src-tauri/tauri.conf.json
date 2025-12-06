@@ -31,7 +31,9 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "createUpdaterArtifacts": true
+    "createUpdaterArtifacts": true,
+    "externalBin": ["binaries/api"],
+    "resources": ["../../api/app/drizzle/migrations/**/*"]
   },
   "plugins": {
     "shell": {
