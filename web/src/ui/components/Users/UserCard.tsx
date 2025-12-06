@@ -16,7 +16,7 @@ export function UserCard({ user }: UserCardProps) {
           <p className="text-gray-600">{user.email}</p>
           {user.role && (
             <span className="inline-block mt-2 px-2 py-1 text-xs rounded bg-blue-100 text-blue-800">
-              {user.role}
+              {user.role} + {user.phone}
             </span>
           )}
           {user.created_at && (
