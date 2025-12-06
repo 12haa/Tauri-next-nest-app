@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "tauri-app",
-  "version": "0.1.29",
+  "version": "0.1.30",
   "identifier": "com.haaa.tauri-app",
   "build": {
     "beforeDevCommand": "pnpm dev",
@@ -32,17 +32,11 @@
       "icons/icon.ico"
     ],
     "createUpdaterArtifacts": true,
-    "externalBin": [
-      "binaries/api"
-    ],
     "resources": [
       "../../api/app/drizzle/migrations/**/*"
     ]
   },
   "plugins": {
-    "shell": {
-      "all": true
-    },
     "updater": {
       "endpoints": [
         "https://github.com/12haa/Tauri-next-nest-app/releases/latest/download/latest.json"
