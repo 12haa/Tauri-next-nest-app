@@ -31,10 +31,7 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "createUpdaterArtifacts": true,
-    "resources": [
-      "../../api/app/drizzle/migrations/**/*"
-    ]
+    "createUpdaterArtifacts": true
   },
   "plugins": {
     "updater": {
