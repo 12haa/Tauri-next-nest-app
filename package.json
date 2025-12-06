@@ -2,11 +2,11 @@
   "name": "monorepo-app",
   "private": true,
   "scripts": {
-    "dev:web": "cd web && pnpm run dev",
-    "dev:tauri": "cd tauri-app && pnpm run tauri dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev:tauri": "pnpm --filter tauri-app tauri dev",
     "dev": "concurrently \"pnpm run dev:web\" \"pnpm run dev:tauri\"",
-    "build:web": "cd web && pnpm run build",
-    "build:tauri": "cd tauri-app && pnpm run tauri build",
+    "build:web": "pnpm --filter web build",
+    "build:tauri": "pnpm --filter tauri-app tauri build",
     "build": "pnpm run build:web && pnpm run build:tauri"
   },
   "devDependencies": {
