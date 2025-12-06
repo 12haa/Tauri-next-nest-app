@@ -165,7 +165,18 @@ jobs:
       # Build API (Sidecar)
       - name: Build API Sidecar
         working-directory: api/app
-        run: pnpm install && pnpm run build:bin
+        run: |
+          pnpm install
+          if [ "${{ matrix.name }}" == "windows" ]; then
+            pnpm run build:bin:win
+          elif [ "${{ matrix.name }}" == "macos-intel" ]; then
+            pnpm run build:bin:macos-intel
+          elif [ "${{ matrix.name }}" == "macos-arm" ]; then
+            pnpm run build:bin:macos-arm
+          elif [ "${{ matrix.name }}" == "linux" ]; then
+            pnpm run build:bin:linux
+          fi
+        shell: bash
 
       # Build Web App (Next.js)
       - name: Install Web Dependencies
