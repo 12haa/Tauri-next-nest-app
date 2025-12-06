@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "3f29c84e-e51e-4cc6-b843-25e70e30d7e2",
-  "prevId": "94595eb8-67f4-4d40-acbe-dc0bd7d3f5d5",
+  "id": "50925ae0-cb7f-428b-820a-98e566033493",
+  "prevId": "3f29c84e-e51e-4cc6-b843-25e70e30d7e2",
   "tables": {
     "users": {
       "name": "users",
@@ -78,6 +78,13 @@
           "autoincrement": false,
           "default": "'user'"
         },
+        "date_of_birth": {
+          "name": "date_of_birth",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "last_login_at": {
           "name": "last_login_at",
           "type": "text",
@@ -94,6 +101,13 @@
         },
         "updated_at": {
           "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "updated_from": {
+          "name": "updated_from",
           "type": "text",
           "primaryKey": false,
           "notNull": false,

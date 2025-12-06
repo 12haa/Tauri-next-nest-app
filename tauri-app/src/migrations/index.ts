@@ -1,9 +1,10 @@
 import { getDb } from '../lib/db';
 import { Migration } from './types';
 import { migration001 } from './001_initial';
+import { migration002 } from './002_add_phone_number';
 
 // Registry of all migrations - MUST be ordered by ID
-const MIGRATIONS: Migration[] = [migration001].sort((a, b) => a.id - b.id);
+const MIGRATIONS: Migration[] = [migration001, migration002].sort((a, b) => a.id - b.id);
 
 export async function runMigrations(): Promise<void> {
   const db = await getDb();

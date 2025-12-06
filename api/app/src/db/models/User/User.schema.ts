@@ -11,9 +11,11 @@ export const users = sqliteTable('users', {
   bio: text('bio'),
   address: text('address'),
   role: text('role').default('user'),
+  dateOfBirth: text('date_of_birth'),
   lastLoginAt: text('last_login_at'),
   createdAt: text('created_at').$defaultFn(() => new Date().toISOString()),
   updatedAt: text('updated_at').$defaultFn(() => new Date().toISOString()),
+  updatedFrom: text('updated_from'),
 });
 
 // تعریف تایپ‌ها
