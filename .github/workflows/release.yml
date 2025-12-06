@@ -122,10 +122,7 @@ jobs:
             args: '--target x86_64-apple-darwin'
             rust_target: 'x86_64-apple-darwin'
             name: 'macos-intel'
-          - platform: 'ubuntu-22.04'
-            args: ''
-            rust_target: ''
-            name: 'linux'
+
           - platform: 'windows-latest'
             args: ''
             rust_target: ''
