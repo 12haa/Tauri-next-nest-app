@@ -12,7 +12,8 @@ export const databaseProviders = [
   {
     provide: DATABASE_CONNECTION,
     useFactory: async () => {
-      const dataDir = path.join(process.cwd(), 'data');
+      const appDataDir = process.env.APP_DATA_DIR;
+      const dataDir = appDataDir || path.join(process.cwd(), 'data');
       if (!fs.existsSync(dataDir)) {
         fs.mkdirSync(dataDir, { recursive: true });
       }
@@ -29,11 +30,9 @@ export const databaseProviders = [
       const db = drizzle(client, { schema });
 
       // Run migrations
-      const migrationsFolder = path.join(
-        process.cwd(),
-        'drizzle',
-        'migrations',
-      );
+      const migrationsFolder =
+        process.env.MIGRATIONS_DIR ||
+        path.join(process.cwd(), 'drizzle', 'migrations');
       console.log(`Running migrations from: ${migrationsFolder}`);
 
       try {

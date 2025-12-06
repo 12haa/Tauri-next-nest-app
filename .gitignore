@@ -19,6 +19,7 @@ lerna-debug.log*
 # Rust / Tauri
 target/
 **/*.rs.bk
+tauri-app/src-tauri/binaries/
 
 # IDE
 .vscode

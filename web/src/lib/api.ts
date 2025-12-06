@@ -62,9 +62,15 @@ export const usersApi = {
     return data;
   },
 
-  // حذف کاربر
   delete: async (id: number): Promise<void> => {
     await api.delete(`/users/${id}`);
+  },
+};
+
+export const debugApi = {
+  getTables: async (): Promise<any[]> => {
+    const { data } = await api.get('/tables');
+    return data;
   },
 };
 
