@@ -21,17 +21,7 @@
     "core:webview:default",
     "core:webview:allow-webview-position",
     "core:webview:allow-webview-size",
-    "core:webview:allow-internal-toggle-devtools",
-    "shell:allow-execute",
-    {
-      "identifier": "shell:allow-execute",
-      "allow": [
-        {
-          "name": "api",
-          "sidecar": true
-        }
-      ]
-    }
+    "core:webview:allow-internal-toggle-devtools"
   ],
   "platforms": ["windows", "linux", "macOS"]
 }
