@@ -159,15 +159,13 @@ jobs:
           sudo apt update
           sudo apt install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
-      # Build Web App (Next.js)
-      - name: Install Web Dependencies
-        working-directory: web
-        run: pnpm install && pnpm build
+      # Install Workspace Dependencies
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
 
-      # Install Tauri Dependencies
-      - name: Install Tauri Dependencies
-        working-directory: tauri-app
-        run: pnpm install
+      # Build Web App (Next.js)
+      - name: Build Web App
+        run: pnpm run build:web
 
       # Build Tauri App - FIXED SYNTAX
       - name: Build Tauri App
