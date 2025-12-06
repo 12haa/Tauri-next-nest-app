@@ -1,15 +1,45 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import { useState, useEffect } from 'react';
+import reactLogo from './assets/react.svg';
+import { invoke } from '@tauri-apps/api/core';
+import './App.css';
+import { runMigrations } from './migrations';
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  const [greetMsg, setGreetMsg] = useState('');
+  const [name, setName] = useState('');
+  const [isMigrating, setIsMigrating] = useState(true);
+  const [migrationError, setMigrationError] = useState<string | null>(null);
+
+  useEffect(() => {
+    runMigrations()
+      .then(() => setIsMigrating(false))
+      .catch((err) => {
+        console.error(err);
+        setMigrationError('Failed to run database migrations. Please restart the app.');
+        setIsMigrating(false);
+      });
+  }, []);
 
   async function greet() {
     // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
+    setGreetMsg(await invoke('greet', { name }));
+  }
+
+  if (isMigrating) {
+    return (
+      <div className="container">
+        <h1>Checking migrations...</h1>
+      </div>
+    );
+  }
+
+  if (migrationError) {
+    return (
+      <div className="container">
+        <h1 style={{ color: 'red' }}>Error</h1>
+        <p>{migrationError}</p>
+      </div>
+    );
   }
 
   return (
