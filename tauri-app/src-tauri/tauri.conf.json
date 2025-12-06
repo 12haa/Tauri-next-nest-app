@@ -32,17 +32,9 @@
       "icons/icon.ico"
     ],
     "createUpdaterArtifacts": true,
-    "externalBin": [
-      "binaries/api"
-    ],
-    "resources": [
-      "../../api/app/drizzle/migrations/**/*"
-    ]
+    "resources": ["../../api/app/drizzle/migrations/**/*"]
   },
   "plugins": {
-    "shell": {
-      "all": true
-    },
     "updater": {
       "endpoints": [
         "https://github.com/12haa/Tauri-next-nest-app/releases/latest/download/latest.json"
