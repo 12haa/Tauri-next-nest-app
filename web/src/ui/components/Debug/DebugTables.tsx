@@ -16,7 +16,7 @@ export function DebugTables() {
 
   return (
     <div className="mt-8 p-4 bg-gray-100 rounded-lg">
-      <h3 className="font-bold text-lg mb-2">📊 Database Tables (Debug)</h3>
+      <h3 className="font-bold text-black text-lg mb-2">📊 Database Tables (Debug)</h3>
       {error ? (
         <p className="text-red-600">Error: {error}</p>
       ) : (

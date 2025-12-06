@@ -1,4 +1,4 @@
-import { UserList } from '@/ui/components/Users/UsersList';
+import { UsersList } from '@/ui/components/Users/UsersList';
 
 import { DebugTables } from '@/ui/components/Debug/DebugTables';
 
@@ -10,7 +10,7 @@ export default function Home() {
         <p className="text-gray-600 mt-2">ممد the one </p>
       </header>
 
-      <UserList />
+      <UsersList />
 
       <DebugTables />
     </main>

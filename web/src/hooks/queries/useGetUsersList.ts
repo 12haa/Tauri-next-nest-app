@@ -1,61 +1,67 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { usersApi } from '@/lib/api';
-import { CreateUserInput, UpdateUserInput } from '@/types/userTypes';
+'use client';
 
+import { invoke } from '@tauri-apps/api/core';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-// کلید query برای کاربران
-const USERS_KEY = ['users'];
-
-// دریافت همه کاربران
-export function useUsers() {
-  return useQuery({
-    queryKey: USERS_KEY,
-    queryFn: usersApi.getAll,
-  });
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  password: string;
+  age?: number | null;
+  phone?: string | null;
+  profile_picture?: string | null;
+  bio?: string | null;
+  address?: string | null;
+  role?: string | null;
+  date_of_birth?: string | null;
+  date_of_death?: string | null;
+  last_login_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  updated_from?: string | null;
 }
 
-// دریافت یک کاربر
-export function useUser(id: number) {
-  return useQuery({
-    queryKey: [...USERS_KEY, id],
-    queryFn: () => usersApi.getOne(id),
-    enabled: !!id,
-  });
+export interface NewUser {
+  name: string;
+  email: string;
+  password: string;
 }
 
-// ایجاد کاربر
-export function useCreateUser() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (input: CreateUserInput) => usersApi.create(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: USERS_KEY });
+export function useGetUsers() {
+  return useQuery<User[]>({
+    queryKey: ['users'],
+    queryFn: async () => {
+      try {
+        const users = await invoke<User[]>('get_users');
+        return users;
+      } catch (error) {
+        console.error('Failed to get users:', error);
+        throw error;
+      }
     },
   });
 }
 
-// به‌روزرسانی کاربر
-export function useUpdateUser() {
+export function useAddUser() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, input }: { id: number; input: UpdateUserInput }) =>
-      usersApi.update(id, input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: USERS_KEY });
+    mutationFn: async (newUser: NewUser) => {
+      try {
+        await invoke('add_user', {
+          name: newUser.name,
+          email: newUser.email,
+          password: newUser.password,
+        });
+      } catch (error) {
+        console.error('Failed to add user:', error);
+        throw error;
+      }
     },
-  });
-}
-
-// حذف کاربر
-export function useDeleteUser() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: number) => usersApi.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: USERS_KEY });
+      // Invalidate and refetch users query after successful mutation
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     },
   });
 }

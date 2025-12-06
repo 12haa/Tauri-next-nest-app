@@ -1,45 +1,72 @@
 'use client';
 
-import { useState } from 'react';
-
+import { useGetUsers, useAddUser } from '@/hooks/queries/useGetUsersList';
 import { UserCard } from './UserCard';
 import { UserForm } from './UserForm';
-import { useUsers } from '@/hooks/queries/useGetUsersList';
-import { User } from '@/types/userTypes';
+import { useState } from 'react';
 
-
-export function UserList() {
-  const { data: users, isLoading, error } = useUsers();
-  const [editingUser, setEditingUser] = useState<User | null>(null);
+export function UsersList() {
+  const { data: users, isLoading, error } = useGetUsers();
+  const addUser = useAddUser();
+  const [showForm, setShowForm] = useState(false);
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center p-8">
+        <div className="text-lg">Loading users...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center text-red-600 p-4">خطا در بارگذاری کاربران: {error.message}</div>
+      <div className="flex items-center justify-center p-8">
+        <div className="text-lg text-red-500">
+          Error loading users: {error instanceof Error ? error.message : 'Unknown error'}
+        </div>
+      </div>
     );
   }
 
-  return (
-    <div>
-      <UserForm editingUser={editingUser} onCancel={() => setEditingUser(null)} />
+  const handleAddUser = async (data: { name: string; email: string; password: string }) => {
+    try {
+      await addUser.mutateAsync(data);
+      setShowForm(false);
+    } catch (error) {
+      console.error('Failed to add user:', error);
+    }
+  };
 
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold">لیست کاربران ({users?.length || 0})</h2>
-        {users && users.length > 0 ? (
-          users.map((user) => (
-            <UserCard key={user.id} user={user} onEdit={(user) => setEditingUser(user)} />
-          ))
-        ) : (
-          <p className="text-gray-500 text-center py-8">هیچ کاربری یافت نشد</p>
-        )}
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Users ({users?.length || 0})</h2>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        >
+          {showForm ? 'Cancel' : 'Add User'}
+        </button>
       </div>
+
+      {showForm && (
+        <div className="border border-gray-200 rounded-lg p-6">
+          <h3 className="text-xl font-semibold mb-4">Add New User</h3>
+          <UserForm onSubmit={handleAddUser} isLoading={addUser.isPending} />
+        </div>
+      )}
+
+      {users && users.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {users.map((user) => (
+            <UserCard key={user.id} user={user} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center p-8 border border-gray-200 rounded-lg">
+          <p className="text-gray-500">No users found. Add your first user!</p>
+        </div>
+      )}
     </div>
   );
 }
